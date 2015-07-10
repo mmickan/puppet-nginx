@@ -6,9 +6,12 @@
 #   [*ensure*]              - Enables or disables the specified vhost
 #     (present|absent)
 #   [*listen_ip*]           - Default IP Address for NGINX to listen with this
-#     vHost on. Defaults to all interfaces (*)
+#     vHost on. To listen on a unix socket, set this to "unix" and
+#     listen_port to the absolute path to the socket. Defaults to all
+#     interfaces (*)
 #   [*listen_port*]         - Default IP Port for NGINX to listen with this
-#     vHost on. Defaults to TCP 80
+#     vHost on. Can be set to an absolute path if listen_ip is "unix", must
+#     be a valid port number otherwise. Defaults to TCP 80
 #   [*listen_options*]      - Extra options for listen directive like
 #     'default' to catchall. Undef by default.
 #   [*location_allow*]      - Array: Locations to allow connections from.
@@ -263,7 +266,11 @@ define nginx::resource::vhost (
     fail('$listen_ip must be a string or array.')
   }
   if !is_integer($listen_port) {
-    fail('$listen_port must be an integer.')
+    if ($listen_ip == "unix") {
+      validate_absolute_path($listen_port)
+    } else {
+      fail('$listen_port must be an integer.')
+    }
   }
   if ($listen_options != undef) {
     validate_string($listen_options)
