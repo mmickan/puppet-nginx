@@ -308,7 +308,7 @@ define nginx::resource::location (
     fail('$priority must be an integer.')
   }
   validate_array($rewrite_rules)
-  if ($priority < 401) or ($priority > 899) {
+  if (($priority + 0) < 401) or (($priority + 0) > 899) {
     fail('$priority must be in the range 401-899.')
   }
 
@@ -376,10 +376,10 @@ define nginx::resource::location (
 
 
   ## Create stubs for vHost File Fragment Pattern
+  $location_md5 = md5($location)
   if ($ssl_only != true) {
-    $tmpFile=md5("${vhost_sanitized}-${priority}-${location_sanitized}")
-
-    concat::fragment { $tmpFile:
+    concat::fragment { "${vhost_sanitized}-${priority}-${location_md5}":
+      ensure  => $ensure_real,
       target  => $config_file,
       content => join([
         template('nginx/vhost/location_header.erb'),
@@ -394,8 +394,8 @@ define nginx::resource::location (
   if ($ssl == true or $ssl_only == true) {
     $ssl_priority = $priority + 300
 
-    $sslTmpFile=md5("${vhost_sanitized}-${ssl_priority}-${location_sanitized}-ssl")
-    concat::fragment { $sslTmpFile:
+    concat::fragment { "${vhost_sanitized}-${ssl_priority}-${location_md5}-ssl":
+      ensure  => $ensure_real,
       target  => $config_file,
       content => join([
         template('nginx/vhost/location_header.erb'),

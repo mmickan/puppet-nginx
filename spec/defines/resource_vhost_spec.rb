@@ -8,6 +8,7 @@ describe 'nginx::resource::vhost' do
     {
       :www_root    => '/',
       :ipv6_enable => true,
+      :listen_unix_socket_enable => true,
     }
   end
   let :facts do
@@ -112,6 +113,30 @@ describe 'nginx::resource::vhost' do
           :attr  => 'ipv6_listen_options',
           :value => 'spdy',
           :match => %r'\s+listen\s+\[::\]:80 spdy;',
+        },
+        {
+          :title => 'should enable listening on unix socket',
+          :attr  => 'listen_unix_socket_enable',
+          :value => true,
+          :match => %r'\s+listen\s+unix:/var/run/nginx\.sock;',
+        },
+        {
+          :title    => 'should not enable listening on unix socket',
+          :attr     => 'listen_unix_socket_enable',
+          :value    => false,
+          :notmatch => %r'\s+listen\s+unix:/var/run/nginx\.sock;',
+        },
+        {
+          :title => 'should set the listen unix socket',
+          :attr  => 'listen_unix_socket',
+          :value => '/var/run/puppet_nginx.sock',
+          :match => %r'\s+listen\s+unix:/var/run/puppet_nginx\.sock;',
+        },
+        {
+          :title => 'should set the listen unix socket options',
+          :attr  => 'listen_unix_socket_options',
+          :value => 'spdy',
+          :match => %r'\s+listen\s+unix:/var/run/nginx\.sock spdy;',
         },
         {
           :title => 'should set servername(s)',
@@ -375,6 +400,18 @@ describe 'nginx::resource::vhost' do
           :match => %r'\s+listen\s+\*:443 ssl;',
         },
         {
+          :title => 'should set HTTP2',
+          :attr  => 'http2',
+          :value => 'on',
+          :match => %r'\s+listen\s+\*:443 ssl http2;',
+        },
+        {
+          :title => 'should not set HTTP2',
+          :attr  => 'http2',
+          :value => 'off',
+          :match => %r'\s+listen\s+\*:443 ssl;',
+        },
+        {
           :title => 'should set the IPv4 listen options',
           :attr  => 'listen_options',
           :value => 'default',
@@ -427,6 +464,12 @@ describe 'nginx::resource::vhost' do
           :attr  => 'rewrite_www_to_non_www',
           :value => false,
           :match => %r'\s+server_name\s+www.rspec.example.com;',
+        },
+        {
+          :title => 'should set the SSL buffer size',
+          :attr  => 'ssl_buffer_size',
+          :value => '4k',
+          :match => '  ssl_buffer_size           4k;',
         },
         {
           :title => 'should set the SSL client certificate file',
@@ -705,8 +748,8 @@ describe 'nginx::resource::vhost' do
           }
         end
 
-        it "should set the server_name of the rewrite server stanza to the first server_name with 'www.' stripped" do
-          is_expected.to contain_concat__fragment("#{title}-ssl-header").with_content(/^\s+server_name\s+foo.com;/)
+        it "should set the server_name of the rewrite server stanza to every server_name with 'www.' stripped" do
+          is_expected.to contain_concat__fragment("#{title}-ssl-header").with_content(/^\s+server_name\s+foo.com\s+bar.foo.com\s+foo.com;/)
         end
       end
 
@@ -720,8 +763,8 @@ describe 'nginx::resource::vhost' do
           }
         end
 
-        it "should set the server_name of the rewrite server stanza to the first server_name with 'www.' stripped" do
-          is_expected.to contain_concat__fragment("#{title}-header").with_content(/^\s+server_name\s+foo.com;/)
+        it "should set the server_name of the rewrite server stanza to every server_name with 'www.' stripped" do
+          is_expected.to contain_concat__fragment("#{title}-header").with_content(/^\s+server_name\s+foo.com\s+bar.foo.com\s+foo.com;/)
         end
       end
 

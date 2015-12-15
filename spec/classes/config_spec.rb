@@ -104,7 +104,13 @@ describe 'nginx::config' do
           :title => 'should set error_log',
           :attr  => 'nginx_error_log',
           :value => '/path/to/error.log',
-          :match => 'error_log  /path/to/error.log;',
+          :match => 'error_log  /path/to/error.log error;',
+        },
+        {
+          :title => 'should set error_log severity level',
+          :attr  => 'nginx_error_log_severity',
+          :value => 'warn',
+          :match => 'error_log  /var/log/nginx/error.log warn;',
         },
         {
             :title => 'should set pid',
@@ -236,13 +242,67 @@ describe 'nginx::config' do
           :title => 'should set gzip',
           :attr  => 'gzip',
           :value => 'on',
-          :match => '  gzip         on;',
+          :match => '  gzip              on;',
         },
         {
           :title => 'should not set gzip',
           :attr  => 'gzip',
           :value => 'off',
           :notmatch => /gzip/,
+        },
+        {
+            :title  => 'should set gzip_buffers',
+            :attr   => 'gzip_buffers',
+            :value  => '32 4k',
+            :match  => '  gzip_buffers      32 4k;',
+        },
+        {
+            :title  => 'should set gzip_comp_level',
+            :attr   => 'gzip_comp_level',
+            :value  => 5,
+            :match  => '  gzip_comp_level   5;',
+        },
+        {
+            :title  => 'should set gzip_disable',
+            :attr   => 'gzip_disable',
+            :value  => 'MSIE [1-6]\.(?!.*SV1)',
+            :match  => '  gzip_disable      MSIE [1-6]\.(?!.*SV1);',
+        },
+        {
+            :title  => 'should set gzip_min_length',
+            :attr   => 'gzip_min_length',
+            :value  => '10',
+            :match  => '  gzip_min_length   10;',
+        },
+        {
+            :title  => 'should set gzip_http_version',
+            :attr   => 'gzip_http_version',
+            :value  => '1.0',
+            :match  => '  gzip_http_version 1.0;',
+        },
+        {
+            :title  => 'should set gzip_proxied',
+            :attr   => 'gzip_proxied',
+            :value  => 'any',
+            :match  => '  gzip_proxied      any;',
+        },
+        {
+            :title  => 'should set gzip_types (array)',
+            :attr   => 'gzip_types',
+            :value  => ['text/plain','text/html'],
+            :match  => '  gzip_types        text/plain text/html;',
+        },
+        {
+            :title  => 'should set gzip_types (string)',
+            :attr   => 'gzip_types',
+            :value  => ['text/plain'],
+            :match  => '  gzip_types        text/plain;',
+        },
+        {
+            :title  => 'should set gzip_vary',
+            :attr   => 'gzip_vary',
+            :value  => 'on',
+            :match  => '  gzip_vary         on;',
         },
         {
           :title => 'should set proxy_cache_path',
@@ -505,6 +565,12 @@ describe 'nginx::config' do
       it { is_expected.to contain_file("/var/nginx/client_body_temp").with(:owner => 'www-data')}
       it { is_expected.to contain_file("/var/nginx/proxy_temp").with(:owner => 'www-data')}
       it { is_expected.to contain_file("/etc/nginx/nginx.conf").with_content %r{^user www-data;}}
+    end
+
+    context "when nginx_error_log_severity = invalid" do
+      let(:params) {{:nginx_error_log_severity => 'invalid'}}
+
+      it { expect { is_expected.to contain_class('nginx::config') }.to raise_error(Puppet::Error,/\$nginx_error_log_severity must be debug, info, notice, warn, error, crit, alert or emerg/) }
     end
   end
 end
